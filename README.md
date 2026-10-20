@@ -86,9 +86,9 @@ statistics of HAProxy.
   [HAProxy Technologies image](https://hub.docker.com/r/haproxytech/haproxy-alpine)
   with its Data Plane API (Apache-2.0), with
   [traefik/whoami](https://github.com/traefik/whoami) (Apache-2.0) as servers.
-- Cover: the HAProxy logo, from the
-  [HAProxy website](https://www.haproxy.org), a trademark of HAProxy
-  Technologies.
+- Cover: the HAProxy logo by HAProxy Technologies,
+  [from Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Haproxy-logo.png)
+  (CC BY-SA 4.0); the cover itself is shared under the same license.
 - Built from the official
   [Gladys integration template](https://github.com/GladysAssistant/integration-template-js)
   and on the architecture of
