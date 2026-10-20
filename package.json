@@ -1,8 +1,8 @@
 {
-  "name": "gladys-integration-template-js",
+  "name": "gladys-haproxy",
   "version": "1.0.0",
   "private": true,
-  "description": "Official starter template to build an external integration for Gladys Assistant with the JavaScript SDK.",
+  "description": "Gladys Assistant integration for the HAProxy load balancer: backends, servers, 5xx errors, scene triggers and a dashboard widget.",
   "type": "module",
   "main": "index.js",
   "scripts": {
@@ -25,5 +25,9 @@
     "globals": "^17.13.0",
     "prettier": "^3.9.9"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/guim31/gladys-haproxy.git"
+  }
 }

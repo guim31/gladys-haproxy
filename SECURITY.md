@@ -30,6 +30,23 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+What the integration handles:
+
+- the optional **user and password** of the statistics page (`stats auth`) or
+  of the Data Plane API, stored by Gladys in the integration configuration
+  (never written to `/data`, never logged); they are only sent, in the
+  `Authorization` header, to the address configured, and redirects are not
+  followed so they never reach another host;
+- the statistics of HAProxy (names, statuses and counters of the frontends,
+  backends and servers; the Data Plane API also gives server addresses): kept
+  in memory, only the names, statuses, health check results and counters are
+  used, published to Gladys or logged;
+- `/data/haproxy-state.json`: the source and address of HAProxy, the last
+  state of each backend and server and since when (no secret);
+- network: HTTP(S) requests to the statistics page or the Data Plane API, or
+  one `show stat` command on the runtime API in TCP — a read-only command; the
+  integration never sends any other command. No port is opened.
+
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
 and the third-party services and devices the integration talks to.

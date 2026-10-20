@@ -1,67 +1,181 @@
-# Template de démonstration
+# HAProxy
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+[HAProxy](https://www.haproxy.org) est le répartiteur de charge et reverse
+proxy placé devant de nombreux services : il répartit les requêtes entre
+plusieurs serveurs, vérifie que chacun répond encore, et écarte un serveur qui
+tombe. Cette intégration amène ses statistiques dans Gladys : un appareil
+« HAProxy » avec les frontaux ouverts et les serveurs en service, et un
+appareil par backend avec ses serveurs, ses sessions et sa part d'erreurs 5xx.
+Les scènes peuvent réagir quand **n'importe quel** serveur tombe ou revient,
+quand un backend n'a plus de serveur, ou quand HAProxy lui-même ne répond plus ;
+un widget du tableau de bord liste d'abord les backends en panne. Lecture
+seule : rien n'est jamais modifié dans HAProxy.
 
-## Ce que vous obtenez
+Testée avec un vrai HAProxy 3.2 (Docker, les trois sources ci-dessous, deux
+backends derrière des health checks HTTP, serveurs arrêtés puis relancés
+exprès, basic auth). HAProxy 2.x a les mêmes statistiques et devrait
+fonctionner, sans avoir été testé : vos retours sont les bienvenus dans
+[les issues](https://github.com/guim31/gladys-haproxy/issues).
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+## Ce qu'il vous faut
 
-## Configuration
+- Gladys Assistant 5.1.0 ou plus récent.
+- HAProxy joignable depuis la machine de Gladys par **une** de ces sources :
+  - **Page de statistiques (HTTP)**, la plus simple : un frontal avec la page
+    de statistiques, éventuellement protégée par un utilisateur et un mot de
+    passe :
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+    ```
+    frontend stats
+      bind :8404
+      stats enable
+      stats uri /stats
+      stats auth gladys:un-long-mot-de-passe
+    ```
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+  - **API Data Plane**, si elle tourne déjà à côté de HAProxy (port 5555 par
+    défaut) : saisissez son utilisateur et son mot de passe ;
+  - **API runtime en TCP** : un socket de statistiques exposé sur le réseau,
+    `stats socket ipv4@0.0.0.0:9999 level user`. Il n'a pas de mot de passe :
+    seulement sur un réseau de confiance.
+- Pour savoir qu'un serveur est **tombé**, un health check sur lui (`check`
+  sur la ligne `server`, `option httpchk` en HTTP). Sans lui, HAProxy affiche
+  le serveur « no check » et l'intégration le compte en service.
 
-## Actions
+## Premiers pas
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+### 1. Ouvrir les statistiques de HAProxy
 
-## Scènes
+Ajoutez la page de statistiques ci-dessus à `haproxy.cfg` (ou la ligne du
+socket dans `global`), rechargez HAProxy, et ouvrez
+`http://<machine HAProxy>:8404/stats` dans un navigateur : la page liste les
+frontaux, les backends et les serveurs.
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+### 2. Configurer l'intégration
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+Dans Gladys, ouvrez **Intégrations → HAProxy → Configuration** :
+
+- **Source** : Page de statistiques (HTTP), API Data Plane, ou API runtime en
+  TCP (show stat).
+- **Adresse** : l'URL de la page de statistiques comme dans le navigateur
+  (`http://192.168.1.2:8404/stats`), l'URL de base de l'API Data Plane
+  (`http://192.168.1.2:5555`), ou `hôte:port` du socket (`192.168.1.2:9999`).
+- **Utilisateur** et **Mot de passe** : ceux de `stats auth`, ou de l'API Data
+  Plane. Sinon, laissez vide.
+- **Un appareil par serveur** : propose aussi chaque serveur dans l'onglet
+  Découverte.
+- **Intervalle de rafraîchissement** : de 15 secondes à 5 minutes, 30 secondes
+  par défaut. Une requête légère à chaque fois.
+- **Langue des noms** : la langue des noms des fonctionnalités et des
+  résultats de scène.
+
+Enregistrez, puis appuyez sur **Tester la connexion** : la réponse donne le
+nombre de backends et de serveurs en service.
+
+### 3. Ajouter les appareils
+
+Ouvrez l'onglet **Découverte** et ajoutez l'appareil HAProxy et les backends à
+suivre. Les déclencheurs de scène et le widget fonctionnent pour tous les
+backends, ajoutés ou non.
+
+## Les appareils
+
+**HAProxy**
+
+| Fonctionnalité      | Signification                                             |
+| ------------------- | --------------------------------------------------------- |
+| Joignable           | 1 quand les statistiques répondent, 0 après deux échecs   |
+| Frontaux ouverts    | frontaux qui acceptent des connexions (non arrêtés)       |
+| Backends en panne   | backends sans aucun serveur disponible                    |
+| Serveurs en service | serveurs qui reçoivent du trafic, tous backends confondus |
+| Serveurs au total   | serveurs déclarés, tous backends confondus                |
+| Sessions en cours   | sessions ouvertes sur les frontaux                        |
+
+**Un appareil par backend** (ayant au moins un serveur), nommé comme dans
+HAProxy
+
+| Fonctionnalité      | Signification                                                           |
+| ------------------- | ----------------------------------------------------------------------- |
+| Disponible          | 1 quand HAProxy a un serveur pour lui (secours compris)                 |
+| Serveurs en service | serveurs qui reçoivent du trafic : UP, ou sans health check             |
+| Serveurs au total   | serveurs déclarés, secours compris                                      |
+| Sessions en cours   | sessions ouvertes sur le backend                                        |
+| Erreurs 5xx         | part des 5xx parmi les réponses HTTP depuis la lecture précédente, en % |
+
+**Un appareil par serveur** (option), nommé `backend/serveur` : **En ligne**,
+1 quand le serveur est UP ou sans health check, 0 quand il est DOWN, en
+maintenance (MAINT) ou en drain.
 
 ## Tableau de bord
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+Le widget **HAProxy** affiche trois tuiles (backends en panne, serveurs hors
+service, backends OK), puis les backends — en panne d'abord, puis dégradés,
+puis les autres — avec leurs serveurs en service, et les serveurs hors service
+avec leur statut HAProxy et leur dernier health check (`DOWN · L4TOUT`). Le
+bouton **Actualiser** relit HAProxy aussitôt. Ses réglages permettent de le
+limiter à certains backends (appareils ajoutés à Gladys).
+
+## Scènes
+
+### Déclencheurs
+
+- **Un serveur tombe** : un serveur ne reçoit plus de trafic (DOWN, MAINT,
+  drain). Variables : nom du backend, nom du serveur, statut HAProxy, dernier
+  health check.
+- **Un serveur est rétabli** : avec la durée de la panne en minutes.
+- **Un backend n'a plus de serveur** : HAProxy n'a plus de serveur pour lui,
+  secours compris : ses clients reçoivent des erreurs 503.
+- **HAProxy est injoignable** : deux lectures de suite sans réponse, avec la
+  raison.
+
+Les trois premiers peuvent être limités à certains backends (vide : tous). Rien
+ne se déclenche à la première lecture : seuls les changements sont annoncés,
+y compris ceux survenus pendant un redémarrage de Gladys ou de l'intégration.
+
+### Actions
+
+- **État d'un backend** : disponible ou non, état, serveurs en service et au
+  total, sessions en cours, les serveurs hors service avec leur statut, et une
+  phrase toute prête (« app : Dégradé, 1/2 serveur(s) en service (app2 :
+  DOWN). »).
+- **État de HAProxy** : joignable ou non, backends en panne avec leurs noms,
+  serveurs en service, et une phrase. « HAProxy ne répond pas » est une
+  réponse : la scène continue.
+
+### Idées de scènes
+
+- **Un serveur tombe** → envoyer un message Telegram « {{server}} de
+  {{backend_name}} : {{status}} ({{check}}) ».
+- **Un backend n'a plus de serveur** → une notification à tous les
+  utilisateurs, et une lumière rouge dans le bureau.
+- Chaque matin à 8 h → **État de HAProxy** → envoyer sa phrase.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **« pas de statistiques HAProxy à cette adresse »** : vérifiez la source et
+  l'adresse. Pour la page de statistiques, ouvrez la même adresse suivie de
+  `;csv` dans un navigateur : elle doit afficher des lignes commençant par
+  `# pxname,svname`.
+- **« utilisateur ou mot de passe refusé »** : l'utilisateur de `stats auth`,
+  ou de l'API Data Plane.
+- **« l'adresse redirige »** : la page est servie en HTTPS : saisissez
+  l'adresse en `https://`.
+- **Un serveur reste en service alors que son service est arrêté** : il n'a
+  pas de health check (`check` sur la ligne `server`).
+- **Les erreurs 5xx restent vides** : la part demande deux lectures, et un
+  backend en mode TCP n'a pas de réponses HTTP (0 %).
+- Journaux : **Intégrations → HAProxy → Logs** ; `LOG_LEVEL=debug` montre
+  chaque lecture.
+
+## Limites
+
+- Lecture seule : aucun serveur n'est mis en maintenance ou en drain depuis
+  Gladys.
+- Un seul HAProxy par intégration. Avec plusieurs processus (`nbproc` des
+  anciennes versions), le premier est lu.
+- Les backends sans serveur (redirections, page de statistiques) ne sont pas
+  proposés.
+- Un certificat HTTPS auto-signé n'est pas accepté (utilisez `http://` sur le
+  réseau local).
+- L'API runtime en TCP n'a pas de mot de passe : gardez-la sur un réseau de
+  confiance.
