@@ -211,3 +211,13 @@ test('the address: as copied from the browser, per source; no credentials in it'
     language: 'fr',
   });
 });
+
+test('a timeout reads as such in the logs', async () => {
+  const timeout = async () => {
+    throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+  };
+  await assert.rejects(client(new FakeHaproxy(), { request: timeout }).snapshot(), {
+    kind: ERROR_KINDS.UNREACHABLE,
+    message: 'Timed out',
+  });
+});

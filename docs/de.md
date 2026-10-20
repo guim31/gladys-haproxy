@@ -82,14 +82,14 @@ Backends, angelegt oder nicht.
 
 **HAProxy**
 
-| Funktion              | Bedeutung                                                    |
-| --------------------- | ------------------------------------------------------------ |
-| Erreichbar            | 1, wenn die Statistiken antworten, 0 nach zwei Fehlversuchen |
-| Offene Frontends      | Frontends, die Verbindungen annehmen (nicht gestoppt)        |
-| Ausgefallene Backends | Backends ohne verfügbaren Server                             |
-| Erreichbare Server    | Server, die Traffic annehmen, alle Backends                  |
-| Server insgesamt      | deklarierte Server, alle Backends                            |
-| Aktuelle Sitzungen    | offene Sitzungen auf den Frontends                           |
+| Funktion              | Bedeutung                                             |
+| --------------------- | ----------------------------------------------------- |
+| Erreichbar            | 1, wenn die Statistiken antworten, sonst 0            |
+| Offene Frontends      | Frontends, die Verbindungen annehmen (nicht gestoppt) |
+| Ausgefallene Backends | Backends ohne verfügbaren Server                      |
+| Erreichbare Server    | Server, die Traffic annehmen, alle Backends           |
+| Server insgesamt      | deklarierte Server, alle Backends                     |
+| Aktuelle Sitzungen    | offene Sitzungen auf den Frontends                    |
 
 **Ein Gerät pro Backend** (mit mindestens einem Server), benannt wie in HAProxy
 

@@ -266,3 +266,7 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
   main à côté de `haproxy -W` avec un `dataplaneapi.yml` en `config_version: 2`, copié dans `/tmp`
   car il réécrit son fichier), amonts `traefik/whoami`, `resolvers docker` pour qu'un amont arrêté
   puis relancé revienne.
+- **Rechargement** : sans `load-server-state-from-file`, HAProxy remet chaque serveur UP avec
+  `check_status` `INI` jusqu'à son premier health check (`fall × inter`). Un serveur `INI` ne fait
+  donc aucune transition (ni le backend qui en contient), sinon un serveur mort « flappe » à chaque
+  rechargement. `check_status` porte un préfixe `* ` pendant un check : il est retiré.

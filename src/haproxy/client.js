@@ -248,12 +248,16 @@ export function normalizeRows(rows) {
       const list = servers.get(proxy) ?? [];
       if (!list.some((server) => server.name === name)) {
         const status = text(fields.status);
+        // `* ` marks a check in progress; INI: no check has run yet (just
+        // after a reload, every server reads UP until its first checks).
+        const check = text(fields.check_status).replace(/^\*\s*/, '');
         list.push({
           name,
           status,
           online: isOnline(status),
           backup: number(fields.bck) === 1,
-          check: text(fields.check_status),
+          check: check === 'INI' ? '' : check,
+          pending: check === 'INI',
         });
         servers.set(proxy, list);
       }
@@ -305,11 +309,14 @@ export class HaproxyClient {
   }
 
   static unreachable(err) {
-    const code = err.cause?.code ?? err.code;
+    const raw = err.cause?.code ?? err.code;
+    const code = typeof raw === 'string' ? raw : null;
     if (TLS_CODES.has(code)) {
       return new HaproxyError(ERROR_KINDS.TLS, `Certificate refused (${code})`);
     }
-    return new HaproxyError(ERROR_KINDS.UNREACHABLE, code ?? err.name ?? err.message);
+    // AbortSignal.timeout throws a DOMException whose numeric code says nothing.
+    const reason = err.name === 'TimeoutError' ? 'Timed out' : (code ?? err.message ?? err.name);
+    return new HaproxyError(ERROR_KINDS.UNREACHABLE, reason);
   }
 
   async get(url) {

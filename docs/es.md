@@ -83,14 +83,14 @@ backends, añadidos o no.
 
 **HAProxy**
 
-| Función             | Significado                                            |
-| ------------------- | ------------------------------------------------------ |
-| Accesible           | 1 cuando las estadísticas responden, 0 tras dos fallos |
-| Frontends abiertos  | frontends que aceptan conexiones (no detenidos)        |
-| Backends caídos     | backends sin ningún servidor disponible                |
-| Servidores activos  | servidores que reciben tráfico, todos los backends     |
-| Servidores en total | servidores declarados, todos los backends              |
-| Sesiones actuales   | sesiones abiertas en los frontends                     |
+| Función             | Significado                                        |
+| ------------------- | -------------------------------------------------- |
+| Accesible           | 1 cuando las estadísticas responden, 0 si no       |
+| Frontends abiertos  | frontends que aceptan conexiones (no detenidos)    |
+| Backends caídos     | backends sin ningún servidor disponible            |
+| Servidores activos  | servidores que reciben tráfico, todos los backends |
+| Servidores en total | servidores declarados, todos los backends          |
+| Sesiones actuales   | sesiones abiertas en los frontends                 |
 
 **Un dispositivo por backend** (con al menos un servidor), con su nombre en
 HAProxy

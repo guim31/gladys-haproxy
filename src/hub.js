@@ -267,7 +267,12 @@ export class HaproxyHub {
   errorShare(backend) {
     const previous = this.counters.get(backend.name);
     this.counters.set(backend.name, { responses: backend.responses, errors: backend.errors5xx });
-    if (!previous || backend.responses < previous.responses) {
+    // A reload starts the counters again from zero.
+    if (
+      !previous ||
+      backend.responses < previous.responses ||
+      backend.errors5xx < previous.errors
+    ) {
       return null;
     }
     const responses = backend.responses - previous.responses;
@@ -299,6 +304,7 @@ export class HaproxyHub {
     saved.initialized = true;
     this.frontends = frontends;
     this.readAt = now;
+    logger.debug(`Read ${frontends.length} frontend(s), ${backends.length} backend(s)`);
     const events = [];
 
     const next = new Map();
@@ -322,9 +328,14 @@ export class HaproxyHub {
       for (const server of backend.servers) {
         const key = serverKey(backend.name, server.name);
         seenServers.add(key);
-        dirty = this.serverTransition(saved, backend, server, initialized, events) || dirty;
+        // Not checked yet (just reloaded): its UP means nothing, keep what was known.
+        if (!server.pending) {
+          dirty = this.serverTransition(saved, backend, server, initialized, events) || dirty;
+        }
       }
-      dirty = this.backendTransition(saved, backend, initialized, events) || dirty;
+      if (!backend.servers.some((server) => server.pending)) {
+        dirty = this.backendTransition(saved, backend, initialized, events) || dirty;
+      }
     }
     if ([...this.backends.keys()].some((name) => !next.has(name))) {
       widgetChanged = true; // a backend gone from the configuration

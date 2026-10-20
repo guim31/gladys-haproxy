@@ -84,7 +84,7 @@ backends, ajoutés ou non.
 
 | Fonctionnalité      | Signification                                             |
 | ------------------- | --------------------------------------------------------- |
-| Joignable           | 1 quand les statistiques répondent, 0 après deux échecs   |
+| Joignable           | 1 quand les statistiques répondent, 0 sinon               |
 | Frontaux ouverts    | frontaux qui acceptent des connexions (non arrêtés)       |
 | Backends en panne   | backends sans aucun serveur disponible                    |
 | Serveurs en service | serveurs qui reçoivent du trafic, tous backends confondus |

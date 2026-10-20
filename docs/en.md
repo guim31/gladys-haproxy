@@ -81,7 +81,7 @@ not.
 
 | Feature          | Meaning                                                |
 | ---------------- | ------------------------------------------------------ |
-| Reachable        | 1 when the statistics answer, 0 after two failed reads |
+| Reachable        | 1 when the statistics answer, 0 when they no longer do |
 | Frontends open   | frontends accepting connections (not stopped)          |
 | Backends down    | backends without any server available                  |
 | Servers up       | servers taking traffic, every backend                  |

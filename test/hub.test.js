@@ -525,3 +525,25 @@ test('a damaged /data file does not block the reads', async (t) => {
   assert.equal(second.fake.connectionStatus.connected, true);
   assert.equal(second.hub.backends.size, 3);
 });
+
+test('just after a reload, a server not checked yet (INI) changes nothing', async (t) => {
+  const world = await createWorld({ haproxy: new FakeHaproxy({ csv: FIXTURES.backendDown }) });
+  t.after(() => world.app.stop());
+  // HAProxy reloaded: every server reads UP until its first check.
+  for (const [backend, server] of [
+    ['app', 'app1'],
+    ['app', 'app2'],
+    ['api', 'api2'],
+  ]) {
+    world.haproxy.setServer(backend, server, 'UP', 'INI');
+  }
+  await world.hub.pollNow();
+  world.haproxy.load(FIXTURES.backendDown);
+  await world.hub.pollNow();
+  assert.deepEqual(world.fake.sceneEvents, [], 'no flap: still down, never announced again');
+  // A check in progress is shown without its `* ` mark.
+  world.haproxy.setServer('app', 'app1', 'UP', '* L7OK');
+  world.haproxy.setServer('app', 'app1', 'DOWN', '* L4TOUT');
+  await world.hub.pollNow();
+  assert.equal(world.hub.backends.get('app').servers[0].check, 'L4TOUT');
+});
