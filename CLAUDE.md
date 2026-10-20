@@ -32,15 +32,19 @@ pushing.
 
 ```
 index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
+src/app.js                        registers every handler on the hub (also used by the tests)
+src/hub.js                        reading timer, transitions, scene events, publications
+src/haproxy/client.js             the three sources (stats page CSV, Data Plane, socket)
+src/devices.js                    device blueprints, feature keys and names, values
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/widgets.js                    dashboard widget handler (manifest `widgets`)
+src/texts.js                      every message, in the four languages
+src/store.js, src/problems.js     state kept in /data; one log line per lasting failure
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (mandatory)
 test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+test/fixtures/haproxy/            real answers of HAProxy 3.2 (CSV, Data Plane v3, socket)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +74,9 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** is in English, French, German and Spanish: action
+  messages, widget texts, feature names, manifest texts, and `docs/*.md`, kept
+  in sync (`test/i18n.test.js`).
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -233,3 +238,37 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## HAProxy (cette intégration)
+
+- **Trois sources, un seul format** : la page de statistiques (`<stats uri>;csv`, l'option `;csv`
+  s'ajoute à l'URI telle quelle, requête comprise : `/haproxy?stats;csv` marche), `show stat` sur
+  l'API runtime en TCP (même CSV, HAProxy ferme la connexion après la réponse en mode non
+  interactif), et l'API Data Plane `/v3/services/haproxy/stats/native` (v3 : un objet
+  `{ runtimeAPI, stats: [...] }` ; v2 : une liste de ces objets ; `/v2` répond 404 sur Data Plane 3,
+  d'où l'essai v3 puis v2). Les champs JSON portent les mêmes noms que les colonnes du CSV.
+- Lignes du CSV : `type` 0 frontal, 1 backend, 2 serveur, 3 listener. La page de stats d'un
+  `frontend` n'a pas de ligne BACKEND (un `listen` en aurait une, sans serveur) : seuls les backends
+  avec au moins un serveur sont proposés.
+- Statuts de serveur relevés en vrai : `UP`, `DOWN`, `MAINT (resolution)` (nom DNS introuvable avec
+  `init-addr none`), `no check` (pas de health check). Transitoires : `UP 1/3` (en train de tomber,
+  compté en service), `DOWN 1/2` (en train de revenir, compté hors service). `DRAIN` et `NOLB` sont
+  comptés hors service (plus de nouveau trafic). Le statut du backend (`UP`/`DOWN`) est celui de
+  HAProxy, secours compris : c'est lui qui fait « backend sans serveur ».
+- `hrsp_5xx` et les autres `hrsp_*` sont cumulés depuis le démarrage : la part de 5xx se calcule
+  entre deux lectures, et rien n'est publié à la première ni après un rechargement (compteurs
+  remis à zéro, détecté quand le total baisse). Un backend TCP n'a pas de `hrsp_*` : 0 %.
+- La page de stats ne donne **pas la version** de HAProxy (ni le CSV, ni Data Plane `native`) :
+  l'appareil HAProxy n'a donc pas de fonctionnalité « version ».
+- Le socket TCP n'a pas d'authentification : `level user` suffit pour `show stat` et interdit les
+  commandes d'administration. L'intégration n'envoie jamais d'autre commande.
+- Banc Docker utilisé : `haproxytech/haproxy-alpine:3.2` (il embarque `dataplaneapi`, lancé à la
+  main à côté de `haproxy -W` avec un `dataplaneapi.yml` en `config_version: 2`, copié dans `/tmp`
+  car il réécrit son fichier), amonts `traefik/whoami`, `resolvers docker` pour qu'un amont arrêté
+  puis relancé revienne.
+- **Rechargement** : un serveur dont `check_status` vaut `INI` (aucun check encore passé, cas d'un
+  serveur ajouté ou d'un HAProxy qui repart sans état) ne fait aucune transition, ni le backend qui
+  le contient : sinon un serveur mort lu « UP » avant son premier check « flappe ». Sur le banc 3.2,
+  un rechargement (`USR2` au maître) n'a pas montré d'`INI` (le serveur arrêté était DOWN dès la
+  première lecture) : garde de prudence, issue de la relecture. `check_status` porte un préfixe `* `
+  pendant un check : il est retiré.

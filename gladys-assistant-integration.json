@@ -1,177 +1,744 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "HAProxy",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Your HAProxy load balancer in Gladys: backends, servers up or down, 5xx errors, alerts in scenes.",
+    "fr": "Votre répartiteur HAProxy dans Gladys : backends, serveurs tombés, erreurs 5xx, alertes en scène.",
+    "de": "Dein HAProxy-Load-Balancer in Gladys: Backends, ausgefallene Server, 5xx-Fehler, Szenen-Alarme.",
+    "es": "Su balanceador HAProxy en Gladys: backends, servidores caídos, errores 5xx, alertas en escenas."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-haproxy:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-haproxy/main/cover.png",
+  "categories": ["network"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Your HAProxy statistics",
+        "fr": "Vos statistiques HAProxy",
+        "de": "Deine HAProxy-Statistiken",
+        "es": "Sus estadísticas de HAProxy"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Read-only. Enable the statistics page of HAProxy (stats enable, stats uri), or use the Data Plane API or the runtime API in TCP. Then add the backends to follow from the Discover tab.",
+        "fr": "Lecture seule. Activez la page de statistiques de HAProxy (stats enable, stats uri), ou utilisez l'API Data Plane ou l'API runtime en TCP. Ajoutez ensuite les backends à suivre depuis l'onglet Découverte.",
+        "de": "Nur Lesen. Aktiviere die Statistikseite von HAProxy (stats enable, stats uri), oder nutze die Data Plane API oder die Runtime-API über TCP. Lege dann die Backends im Tab „Entdecken“ an.",
+        "es": "Solo lectura. Active la página de estadísticas de HAProxy (stats enable, stats uri), o use la API Data Plane o la API runtime en TCP. Después añada los backends desde la pestaña Descubrir."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://github.com/guim31/gladys-haproxy/blob/main/docs/en.md",
+          "label": {
+            "en": "Setup guide",
+            "fr": "Guide d'installation",
+            "de": "Einrichtungsanleitung",
+            "es": "Guía de instalación"
+          }
+        },
+        {
+          "url": "https://docs.haproxy.org/3.2/management.html#9.1",
+          "label": {
+            "en": "HAProxy statistics",
+            "fr": "Statistiques HAProxy",
+            "de": "HAProxy-Statistiken",
+            "es": "Estadísticas de HAProxy"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
-    },
-    {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
-    },
-    {
-      "key": "unit",
+      "key": "source",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "label": {
+        "en": "Source",
+        "fr": "Source",
+        "de": "Quelle",
+        "es": "Fuente"
+      },
+      "description": {
+        "en": "Where the statistics are read.",
+        "fr": "Où les statistiques sont lues.",
+        "de": "Woher die Statistiken gelesen werden.",
+        "es": "Dónde se leen las estadísticas."
+      },
       "required": false,
-      "default": "celsius",
+      "default": "stats_page",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "stats_page",
+          "label": {
+            "en": "Statistics page (HTTP)",
+            "fr": "Page de statistiques (HTTP)",
+            "de": "Statistikseite (HTTP)",
+            "es": "Página de estadísticas (HTTP)"
+          }
+        },
+        {
+          "value": "dataplane",
+          "label": {
+            "en": "Data Plane API",
+            "fr": "API Data Plane",
+            "de": "Data Plane API",
+            "es": "API Data Plane"
+          }
+        },
+        {
+          "value": "socket",
+          "label": {
+            "en": "Runtime API in TCP (show stat)",
+            "fr": "API runtime en TCP (show stat)",
+            "de": "Runtime-API über TCP (show stat)",
+            "es": "API runtime en TCP (show stat)"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "url",
+      "type": "string",
+      "label": {
+        "en": "Address",
+        "fr": "Adresse",
+        "de": "Adresse",
+        "es": "Dirección"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Statistics page: its URL, as in the browser. Data Plane API: http://host:5555. Runtime API: host:port.",
+        "fr": "Page de statistiques : son URL, comme dans le navigateur. API Data Plane : http://hôte:5555. API runtime : hôte:port.",
+        "de": "Statistikseite: ihre URL wie im Browser. Data Plane API: http://host:5555. Runtime-API: host:port.",
+        "es": "Página de estadísticas: su URL, como en el navegador. API Data Plane: http://host:5555. API runtime: host:puerto."
+      },
+      "placeholder": {
+        "en": "e.g. http://192.168.1.2:8404/stats",
+        "fr": "ex. http://192.168.1.2:8404/stats",
+        "de": "z. B. http://192.168.1.2:8404/stats",
+        "es": "p. ej. http://192.168.1.2:8404/stats"
+      },
+      "required": false
+    },
+    {
+      "key": "username",
+      "type": "string",
+      "label": {
+        "en": "User",
+        "fr": "Utilisateur",
+        "de": "Benutzer",
+        "es": "Usuario"
+      },
+      "description": {
+        "en": "The user of stats auth, or of the Data Plane API. Leave empty otherwise.",
+        "fr": "L'utilisateur de stats auth, ou de l'API Data Plane. Sinon, laissez vide.",
+        "de": "Der Benutzer von stats auth oder der Data Plane API. Sonst leer lassen.",
+        "es": "El usuario de stats auth, o de la API Data Plane. Si no, déjelo vacío."
+      },
+      "required": false
+    },
+    {
+      "key": "password",
+      "type": "secret",
+      "label": {
+        "en": "Password",
+        "fr": "Mot de passe",
+        "de": "Passwort",
+        "es": "Contraseña"
+      },
+      "required": false
+    },
+    {
+      "key": "options",
+      "type": "section",
+      "label": {
+        "en": "Options",
+        "fr": "Options",
+        "de": "Optionen",
+        "es": "Opciones"
+      }
+    },
+    {
+      "key": "server_devices",
+      "type": "boolean",
+      "label": {
+        "en": "One device per server",
+        "fr": "Un appareil par serveur",
+        "de": "Ein Gerät pro Server",
+        "es": "Un dispositivo por servidor"
+      },
+      "description": {
+        "en": "Also propose each server (online or not) in the Discover tab, besides the backends.",
+        "fr": "Propose aussi chaque serveur (en ligne ou non) dans l'onglet Découverte, en plus des backends.",
+        "de": "Schlägt im Tab „Entdecken“ zusätzlich jeden Server (online oder nicht) vor.",
+        "es": "Propone también cada servidor (en línea o no) en la pestaña Descubrir, además de los backends."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": false
+    },
+    {
+      "key": "poll_interval",
+      "type": "select",
+      "label": {
+        "en": "Refresh interval",
+        "fr": "Intervalle de rafraîchissement",
+        "de": "Aktualisierungsintervall",
+        "es": "Intervalo de actualización"
+      },
+      "description": {
+        "en": "How often HAProxy is read: one light request each time.",
+        "fr": "À quelle fréquence HAProxy est lu : une requête légère à chaque fois.",
+        "de": "Wie oft HAProxy gelesen wird: jedes Mal eine leichte Anfrage.",
+        "es": "Con qué frecuencia se lee HAProxy: una petición ligera cada vez."
+      },
+      "required": false,
+      "default": "30",
+      "options": [
+        {
+          "value": "15",
+          "label": {
+            "en": "15 seconds",
+            "fr": "15 secondes",
+            "de": "15 Sekunden",
+            "es": "15 segundos"
+          }
+        },
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "1 minute",
+            "fr": "1 minute",
+            "de": "1 Minute",
+            "es": "1 minuto"
+          }
+        },
+        {
+          "value": "120",
+          "label": {
+            "en": "2 minutes",
+            "fr": "2 minutes",
+            "de": "2 Minuten",
+            "es": "2 minutos"
+          }
+        },
+        {
+          "value": "300",
+          "label": {
+            "en": "5 minutes",
+            "fr": "5 minutes",
+            "de": "5 Minuten",
+            "es": "5 minutos"
+          }
+        }
+      ]
+    },
+    {
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the names",
+        "fr": "Langue des noms",
+        "de": "Sprache der Namen",
+        "es": "Idioma de los nombres"
+      },
+      "description": {
+        "en": "Language of the feature names (set when a device is added) and of the scene results.",
+        "fr": "Langue des noms des fonctionnalités (fixés à l'ajout d'un appareil) et des résultats de scène.",
+        "de": "Sprache der Funktionsnamen (beim Anlegen eines Geräts festgelegt) und der Szenen-Ergebnisse.",
+        "es": "Idioma de los nombres de las funciones (fijados al añadir un dispositivo) y de los resultados de escena."
+      },
+      "required": false,
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
       "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "server_down",
+      "label": {
+        "en": "A server goes down",
+        "fr": "Un serveur tombe",
+        "de": "Ein Server fällt aus",
+        "es": "Un servidor cae"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "A server of a backend stops taking traffic: health check failed (DOWN), maintenance (MAINT) or drain.",
+        "fr": "Un serveur d'un backend ne reçoit plus de trafic : health check en échec (DOWN), maintenance (MAINT) ou drain.",
+        "de": "Ein Server eines Backends nimmt keinen Traffic mehr an: Health Check fehlgeschlagen (DOWN), Wartung (MAINT) oder Drain.",
+        "es": "Un servidor de un backend deja de recibir tráfico: health check fallido (DOWN), mantenimiento (MAINT) o drain."
       },
       "fields": [
         {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
-        },
-        {
-          "key": "target",
+          "key": "backend",
           "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
+          "label": {
+            "en": "Backends (empty: any)",
+            "fr": "Backends (vide : tous)",
+            "de": "Backends (leer: alle)",
+            "es": "Backends (vacío: todos)"
+          },
+          "source": "devices"
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "backend_name",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Backend name",
+            "fr": "Nom du backend",
+            "de": "Name des Backends",
+            "es": "Nombre del backend"
+          }
+        },
+        {
+          "key": "server",
+          "type": "string",
+          "label": {
+            "en": "Server name",
+            "fr": "Nom du serveur",
+            "de": "Name des Servers",
+            "es": "Nombre del servidor"
+          }
+        },
+        {
+          "key": "status",
+          "type": "string",
+          "label": {
+            "en": "HAProxy status",
+            "fr": "Statut HAProxy",
+            "de": "HAProxy-Status",
+            "es": "Estado de HAProxy"
+          }
+        },
+        {
+          "key": "check",
+          "type": "string",
+          "label": {
+            "en": "Last health check",
+            "fr": "Dernier health check",
+            "de": "Letzter Health Check",
+            "es": "Último health check"
+          }
+        }
+      ]
+    },
+    {
+      "key": "server_up",
+      "label": {
+        "en": "A server is back up",
+        "fr": "Un serveur est rétabli",
+        "de": "Ein Server läuft wieder",
+        "es": "Un servidor se restablece"
+      },
+      "description": {
+        "en": "A server that was out takes traffic again, with the length of the outage.",
+        "fr": "Un serveur hors service reçoit de nouveau du trafic, avec la durée de la panne.",
+        "de": "Ein ausgefallener Server nimmt wieder Traffic an, mit der Dauer des Ausfalls.",
+        "es": "Un servidor fuera de servicio vuelve a recibir tráfico, con la duración de la caída."
+      },
+      "fields": [
+        {
+          "key": "backend",
+          "type": "multi_select",
+          "label": {
+            "en": "Backends (empty: any)",
+            "fr": "Backends (vide : tous)",
+            "de": "Backends (leer: alle)",
+            "es": "Backends (vacío: todos)"
+          },
+          "source": "devices"
+        }
+      ],
+      "variables": [
+        {
+          "key": "backend_name",
+          "type": "string",
+          "label": {
+            "en": "Backend name",
+            "fr": "Nom du backend",
+            "de": "Name des Backends",
+            "es": "Nombre del backend"
+          }
+        },
+        {
+          "key": "server",
+          "type": "string",
+          "label": {
+            "en": "Server name",
+            "fr": "Nom du serveur",
+            "de": "Name des Servers",
+            "es": "Nombre del servidor"
+          }
+        },
+        {
+          "key": "downtime_minutes",
+          "type": "number",
+          "label": {
+            "en": "Outage length (minutes)",
+            "fr": "Durée de la panne (minutes)",
+            "de": "Dauer des Ausfalls (Minuten)",
+            "es": "Duración de la caída (minutos)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "backend_down",
+      "label": {
+        "en": "A backend has no server left",
+        "fr": "Un backend n'a plus de serveur",
+        "de": "Ein Backend hat keinen Server mehr",
+        "es": "Un backend se queda sin servidor"
+      },
+      "description": {
+        "en": "HAProxy has no server available for a backend, backups included: its clients get errors (503).",
+        "fr": "HAProxy n'a plus aucun serveur disponible pour un backend, secours compris : ses clients reçoivent des erreurs (503).",
+        "de": "HAProxy hat für ein Backend keinen verfügbaren Server mehr, Backups eingeschlossen: Die Clients bekommen Fehler (503).",
+        "es": "HAProxy ya no tiene ningún servidor disponible para un backend, incluidos los de respaldo: sus clientes reciben errores (503)."
+      },
+      "fields": [
+        {
+          "key": "backend",
+          "type": "multi_select",
+          "label": {
+            "en": "Backends (empty: any)",
+            "fr": "Backends (vide : tous)",
+            "de": "Backends (leer: alle)",
+            "es": "Backends (vacío: todos)"
+          },
+          "source": "devices"
+        }
+      ],
+      "variables": [
+        {
+          "key": "backend_name",
+          "type": "string",
+          "label": {
+            "en": "Backend name",
+            "fr": "Nom du backend",
+            "de": "Name des Backends",
+            "es": "Nombre del backend"
+          }
+        },
+        {
+          "key": "servers_total",
+          "type": "number",
+          "label": {
+            "en": "Servers in total",
+            "fr": "Serveurs au total",
+            "de": "Server insgesamt",
+            "es": "Servidores en total"
+          }
+        }
+      ]
+    },
+    {
+      "key": "proxy_unreachable",
+      "label": {
+        "en": "HAProxy is unreachable",
+        "fr": "HAProxy est injoignable",
+        "de": "HAProxy ist nicht erreichbar",
+        "es": "HAProxy no es accesible"
+      },
+      "description": {
+        "en": "The statistics of HAProxy no longer answer, two reads in a row: HAProxy is down, or the machine.",
+        "fr": "Les statistiques de HAProxy ne répondent plus, deux lectures de suite : HAProxy est arrêté, ou la machine.",
+        "de": "Die Statistiken von HAProxy antworten nicht mehr, zwei Abfragen in Folge: HAProxy ist aus, oder der Rechner.",
+        "es": "Las estadísticas de HAProxy ya no responden, dos lecturas seguidas: HAProxy está detenido, o la máquina."
+      },
+      "variables": [
+        {
+          "key": "error",
+          "type": "string",
+          "label": {
+            "en": "Reason",
+            "fr": "Raison",
+            "de": "Grund",
+            "es": "Motivo"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "get_backend_status",
+      "label": {
+        "en": "State of a backend",
+        "fr": "État d'un backend",
+        "de": "Zustand eines Backends",
+        "es": "Estado de un backend"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "Reads the state of a backend for the next actions: available or not, servers up, servers out, and a ready-made sentence.",
+        "fr": "Lit l'état d'un backend pour les actions suivantes : disponible ou non, serveurs en service, serveurs hors service, et une phrase toute prête.",
+        "de": "Liest den Zustand eines Backends für die nächsten Aktionen: verfügbar oder nicht, erreichbare und ausgefallene Server und einen fertigen Satz.",
+        "es": "Lee el estado de un backend para las siguientes acciones: disponible o no, servidores activos, servidores fuera de servicio y una frase lista."
+      },
+      "timeout_seconds": 20,
       "fields": [
         {
           "key": "device",
           "type": "select",
+          "label": {
+            "en": "Backend",
+            "fr": "Backend",
+            "de": "Backend",
+            "es": "Backend"
+          },
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
           "required": true
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
+          "key": "available",
           "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "label": {
+            "en": "Available",
+            "fr": "Disponible",
+            "de": "Verfügbar",
+            "es": "Disponible"
+          }
+        },
+        {
+          "key": "state",
+          "type": "string",
+          "label": {
+            "en": "State",
+            "fr": "État",
+            "de": "Zustand",
+            "es": "Estado"
+          }
+        },
+        {
+          "key": "servers_up",
+          "type": "number",
+          "label": {
+            "en": "Servers up",
+            "fr": "Serveurs en service",
+            "de": "Erreichbare Server",
+            "es": "Servidores activos"
+          }
+        },
+        {
+          "key": "servers_total",
+          "type": "number",
+          "label": {
+            "en": "Servers in total",
+            "fr": "Serveurs au total",
+            "de": "Server insgesamt",
+            "es": "Servidores en total"
+          }
+        },
+        {
+          "key": "sessions",
+          "type": "number",
+          "label": {
+            "en": "Current sessions",
+            "fr": "Sessions en cours",
+            "de": "Aktuelle Sitzungen",
+            "es": "Sesiones actuales"
+          }
+        },
+        {
+          "key": "servers_out",
+          "type": "string",
+          "label": {
+            "en": "Servers out, with their status",
+            "fr": "Serveurs hors service, avec leur statut",
+            "de": "Ausgefallene Server mit Status",
+            "es": "Servidores fuera de servicio, con su estado"
+          }
+        },
+        {
+          "key": "sentence",
+          "type": "string",
+          "label": {
+            "en": "Sentence",
+            "fr": "Phrase",
+            "de": "Satz",
+            "es": "Frase"
+          }
+        }
+      ]
+    },
+    {
+      "key": "get_proxy_status",
+      "label": {
+        "en": "State of HAProxy",
+        "fr": "État de HAProxy",
+        "de": "Zustand von HAProxy",
+        "es": "Estado de HAProxy"
+      },
+      "description": {
+        "en": "Sums up HAProxy for a message: reachable or not, backends down with their names, servers up.",
+        "fr": "Résume HAProxy pour un message : joignable ou non, backends en panne avec leurs noms, serveurs en service.",
+        "de": "Fasst HAProxy für eine Nachricht zusammen: erreichbar oder nicht, ausgefallene Backends mit Namen, erreichbare Server.",
+        "es": "Resume HAProxy para un mensaje: accesible o no, backends caídos con sus nombres, servidores activos."
+      },
+      "timeout_seconds": 20,
+      "outputs": [
+        {
+          "key": "reachable",
+          "type": "boolean",
+          "label": {
+            "en": "Reachable",
+            "fr": "Joignable",
+            "de": "Erreichbar",
+            "es": "Accesible"
+          }
+        },
+        {
+          "key": "backends_down",
+          "type": "number",
+          "label": {
+            "en": "Backends down",
+            "fr": "Backends en panne",
+            "de": "Ausgefallene Backends",
+            "es": "Backends caídos"
+          }
+        },
+        {
+          "key": "names",
+          "type": "string",
+          "label": {
+            "en": "Names of the backends down",
+            "fr": "Noms des backends en panne",
+            "de": "Namen der ausgefallenen Backends",
+            "es": "Nombres de los backends caídos"
+          }
+        },
+        {
+          "key": "servers_up",
+          "type": "number",
+          "label": {
+            "en": "Servers up",
+            "fr": "Serveurs en service",
+            "de": "Erreichbare Server",
+            "es": "Servidores activos"
+          }
+        },
+        {
+          "key": "servers_total",
+          "type": "number",
+          "label": {
+            "en": "Servers in total",
+            "fr": "Serveurs au total",
+            "de": "Server insgesamt",
+            "es": "Servidores en total"
+          }
+        },
+        {
+          "key": "sentence",
+          "type": "string",
+          "label": {
+            "en": "Sentence",
+            "fr": "Phrase",
+            "de": "Satz",
+            "es": "Frase"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "haproxy",
+      "label": {
+        "en": "HAProxy",
+        "fr": "HAProxy",
+        "de": "HAProxy",
+        "es": "HAProxy"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Backends down first, then degraded, then the others, and the servers out.",
+        "fr": "Les backends en panne d'abord, puis dégradés, puis les autres, et les serveurs hors service.",
+        "de": "Erst ausgefallene Backends, dann eingeschränkte, dann die anderen, und Server außer Betrieb.",
+        "es": "Primero los backends caídos, luego los degradados y los demás, y los servidores fuera de servicio."
+      },
+      "icon": "server",
+      "action_timeout_seconds": 20,
+      "settings": [
+        {
+          "key": "backends",
+          "type": "multi_select",
+          "label": {
+            "en": "Backends (empty: all)",
+            "fr": "Backends (vide : tous)",
+            "de": "Backends (leer: alle)",
+            "es": "Backends (vacío: todos)"
+          },
+          "source": "devices",
+          "description": {
+            "en": "Empty: every backend. Only the devices added to Gladys can be chosen.",
+            "fr": "Vide : tous les backends. Seuls les appareils ajoutés à Gladys peuvent être choisis.",
+            "de": "Leer: alle Backends. Nur die in Gladys angelegten Geräte sind wählbar.",
+            "es": "Vacío: todos los backends. Solo se pueden elegir los dispositivos añadidos a Gladys."
+          },
+          "required": false
+        }
+      ]
     }
   ]
 }
