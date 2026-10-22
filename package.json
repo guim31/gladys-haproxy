@@ -1,6 +1,6 @@
 {
   "name": "gladys-haproxy",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Gladys Assistant integration for the HAProxy load balancer: backends, servers, 5xx errors, scene triggers and a dashboard widget.",
   "type": "module",
